@@ -2,15 +2,14 @@ import { Observer, Observable, Subject, Subscription } from "rxjs";
 import { take, first, map } from "rxjs/operators";
 
 class Work {
-  //TS TODO: you will need to declare a 'broadcaster' with a type and access modified.
-  private broadcaster: Subject<unknown>;
+  private broadcaster: Subject<string>;
 
   constructor() {
     this.broadcaster = new Subject();
   }
 
   // broadcast stream
-  public getBroadcaster(): Subject<unknown> {
+  public getBroadcaster(): Subject<string> {
     return this.broadcaster;
   }
 
@@ -18,8 +17,7 @@ class Work {
   public getSalaryObservable(salary: number): Observable<number> {
     // This observable object will
     // notify observers via onNext, onError, onCompleted callbacks.
-    // TS TODO: add parameter type
-    return new Observable((observer) => {
+    return new Observable((observer: Observer<number>) => {
       let paycheckcount: number = 0;
 
       const interval: number = setInterval(
@@ -57,12 +55,21 @@ class Work {
   }
 }
 
-//TS TODO: create an interface with all of the methods that 'Subscriber' needs.
-interface SubscriberInterface {}
+interface SubscriberInterface {
+  subscribeSubject(work: Work): void;
+  subscribeObservable(work: Work): void;
+  subscribeObservableWithTake(work: Work, takes: number): void;
+  subscribeObservableWithRaise(work: Work, raise: number): void;
+  subscribeObservableWithRaiseAndTaxAndBills(
+    work: Work,
+    raise: number,
+    taxrate: number,
+    bills: number
+    ): void;
+  stop(): void;
+}
 
-// TS TODO: implement the interface
-class Subscriber {
-  // TS TODO: add access modifiers and types
+class Subscriber implements SubscriberInterface {
   private id: number;
   private savings: number;
   private loans: number;
@@ -77,15 +84,13 @@ class Subscriber {
   }
 
   // Subscribes for broadcast messages
-  // TS TODO: add parameter type(s) and return type ???
   public subscribeSubject(work: Work): void {
     work.getBroadcaster().subscribe(message => {
       console.log(this.id + " received a message: " + message);
     });
   }
 
-  // TS TODO: add parameter type(s) and return type  ???
-  public salaryHelperFunction(paycheck: number): void {
+  private salaryHelperFunction(paycheck: number): void {
     this.savings = this.savings + paycheck;
     console.log(this.id + "'s" + " savings:$" + this.savings);
 
@@ -96,8 +101,7 @@ class Subscriber {
   }
 
   // Subscribes for individual messages (paychecks)
-  // TS TODO: add parameter type(s) and return type
-  public subscribeObservable(work): void {
+  public subscribeObservable(work: Work): void {
     if (!this.salarySubscription)
       // TS TODO: add parameter type
       this.salarySubscription = work.getSalaryObservable(this.salary).subscribe(
@@ -108,7 +112,6 @@ class Subscriber {
   }
 
   // ... limited takes
-  // TS TODO: add parameter type(s) and return type
   public subscribeObservableWithTake(work: Work, takes: number): void {
     if (!this.salarySubscription)
       // TS TODO: add parameter type
@@ -123,7 +126,6 @@ class Subscriber {
   }
 
   // ... boosts paycheck by piping paycheck => paycheck * raise
-  // TS TODO: add parameter type(s) and return type
   public subscribeObservableWithRaise(work: Work, raise: number): void {
     if (!this.salarySubscription)
       // TS TODO: add parameter type
@@ -138,17 +140,19 @@ class Subscriber {
   }
 
   // ... multiple maps sequentially chained together
-  // TS TODO: add parameter type(s) and return type
-  public subscribeObservableWithRaiseAndTaxAndBills(work: Work, raise: number, taxrate: number, bills: number): void {
+  public subscribeObservableWithRaiseAndTaxAndBills(
+    work: Work,
+    raise: number,
+    taxrate: number,
+    bills: number
+  ): void {
     if (!this.salarySubscription)
-      // TS TODO: add parameter types
       this.salarySubscription = work
         .getSalaryObservable(this.salary)
         .pipe(
           map((paycheck: number) => paycheck * raise), // adjusting the paycheck for the raise
           map((paycheck: number) => paycheck * taxrate), // then tax
           map((paycheck: number) => paycheck - bills) // subtracting bills
-          // TS TODO: add parameter type
         )
         .subscribe(
           (paycheck: number) => this.salaryHelperFunction(paycheck), // first callback is for data
@@ -157,8 +161,7 @@ class Subscriber {
         );
   }
 
-  // TS TODO: add return type
-  stop() {
+  public stop(): void {
     if (this.salarySubscription) {
       this.salarySubscription.unsubscribe();
       this.salarySubscription = null;
@@ -178,4 +181,4 @@ person1.subscribeObservable(work);
 person2.subscribeSubject(work);
 person2.subscribeObservableWithTake(work, 5);
 person2.subscribeObservableWithRaise(work, 2.5);
-//person1.subscribeObservableWithRaiseAndTaxAndBills(work, 1.25, 0.65, 1500);
+person1.subscribeObservableWithRaiseAndTaxAndBills(work, 1.25, 0.65, 1500);
